@@ -20,10 +20,10 @@ func init() {
 }
 
 type ELF struct {
-	Name     string
-	Path     string
-	Childs   []string
-	Children []*ELF
+	Name     string   `json:"-"`
+	Path     string   `json:"path"`
+	Childs   []string `json:"-"`
+	Children []*ELF   `json:"kids"`
 }
 
 func (e *ELF) IsLeaf() bool {
