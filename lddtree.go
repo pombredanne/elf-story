@@ -1,7 +1,7 @@
 package main
 
 import "fmt"
-import "encoding/json"
+import "github.com/ghodss/yaml"
 import "os"
 import "log"
 import "path/filepath"
@@ -9,129 +9,82 @@ import "debug/elf"
 import "github.com/rai-project/ldcache"
 
 var ld_cache *ldcache.LDCache
-var opencounter int
 
 func init() {
 	var err error
 	ld_cache, err = ldcache.Open()
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 }
 
 type ELF struct {
-	Name     string   `json:"-"`
-	Path     string   `json:"path"`
-	Childs   []string `json:"-"`
-	Children []*ELF   `json:"kids"`
+	Path     string          `json:"file"`
+	Children map[string]*ELF `json:"kids"`
 }
 
-func (e *ELF) IsLeaf() bool {
-	return len(e.Children) == 0
+func (e *ELF) Deps() []string {
+	f, err := elf.Open(e.Path)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer f.Close()
+	libs, err := f.ImportedLibraries()
+	if err != nil {
+		log.Println(err)
+	}
+	return libs // possibly nil
 }
 
 func main() {
-	// basename
-	name := filepath.Base(os.Args[1])
-
-	// fullpath
 	path, err := filepath.Abs(os.Args[1])
 	if err != nil {
-		panic(err)
-	}
-
-	// lookup children
-	f, err := elf.Open(path)
-	if err != nil {
-		panic(err)
-	}
-	opencounter += 1
-	defer func() {
-		f.Close()
-		opencounter -= 1
-		log.Println(opencounter)
-	}()
-	libs, err := f.ImportedLibraries()
-	if err != nil {
-		panic(err)
-	}
-	if libs == nil {
-		libs = []string{}
+		log.Fatalln(err)
 	}
 
 	root := &ELF{
-		Name:     name,
-		Path:     path,
-		Childs:   libs,
-		Children: []*ELF{},
+		Path: path,
 	}
 
-	if len(libs) != 0 {
-		root.Children = resolve(root.Childs)
-	}
+	root.Resolve()
 
-	b, _ := json.MarshalIndent(root, "", "  ")
-	fmt.Println(string(b))
-}
-
-func lookup(names []string) []string {
-	_, b := ld_cache.Lookup(names...)
-	return b
+	b, _ := yaml.Marshal(root)
+	fmt.Print(string(b))
 }
 
 func lookup1(name string) (string, error) {
-	result := lookup([]string{name})
+	_, result := ld_cache.Lookup(name)
 	if len(result) == 0 {
 		return "", fmt.Errorf("None: %s", name)
 	}
 	return result[0], nil
 }
 
-func resolve(names []string) []*ELF {
-	//fmt.Println(names)
-	results := []*ELF{}
-	for _, name := range names {
-		path, err := lookup1(name)
+func (e *ELF) Resolve() {
+	deps := e.Deps()
+	if len(deps) == 0 {
+		return
+	}
+	for _, dep := range deps {
+		path, err := lookup1(dep)
 		if err != nil {
 			log.Println(err)
-			e := &ELF{
-				Name: name,
+			d := &ELF{
+				Path:     dep,
+				Children: nil,
 			}
-			results = append(results, e)
+			e.Children = append(e.Children, d)
 			continue
 		}
 
-		// lookup children
-		f, err := elf.Open(path)
-		if err != nil {
-			panic(err)
-		}
-		opencounter += 1
-		defer func() {
-			f.Close()
-			opencounter -= 1
-			log.Println(opencounter)
-		}()
-		libs, err := f.ImportedLibraries()
-		if err != nil {
-			panic(err)
-		}
-		if libs == nil {
-			libs = []string{}
-		}
-
-		e := &ELF{
-			Name:     name,
+		d := &ELF{
 			Path:     path,
-			Childs:   libs,
 			Children: []*ELF{},
 		}
 
-		if len(libs) != 0 {
-			e.Children = resolve(libs)
-		}
+		d.Resolve()
 
-		results = append(results, e)
+		e.Children = append(e.Children, d)
 	}
-	return results
 }
