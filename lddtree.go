@@ -4,7 +4,6 @@ import "fmt"
 import "github.com/ghodss/yaml"
 import "os"
 import "log"
-import "path/filepath"
 import "debug/elf"
 import "github.com/rai-project/ldcache"
 
@@ -18,13 +17,38 @@ func init() {
 	}
 }
 
-type ELF struct {
-	Path     string          `json:"file"`
-	Children map[string]*ELF `json:"kids"`
+func lookup1(name string) (string, error) {
+	_, result := ld_cache.Lookup(name)
+	if len(result) == 0 {
+		return "", fmt.Errorf("Not found: %s", name)
+	}
+	return result[0], nil
 }
 
-func (e *ELF) Deps() []string {
-	f, err := elf.Open(e.Path)
+type A ELF
+
+type ELF map[string][]A
+
+func New(key string) ELF {
+	return ELF{key: nil}
+}
+
+func (e ELF) Key() string {
+	var key string
+	for a, _ := range e {
+		key = a
+		break
+	}
+	return key
+}
+
+var mem = map[string][]string{}
+
+func (e ELF) Deps() []string {
+	if v, ok := mem[e.Key()]; ok {
+		return v
+	}
+	f, err := elf.Open(e.Key())
 	if err != nil {
 		log.Println(err)
 		return nil
@@ -34,57 +58,33 @@ func (e *ELF) Deps() []string {
 	if err != nil {
 		log.Println(err)
 	}
+	mem[e.Key()] = libs
 	return libs // possibly nil
 }
 
-func main() {
-	path, err := filepath.Abs(os.Args[1])
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	root := &ELF{
-		Path: path,
-	}
-
-	root.Resolve()
-
-	b, _ := yaml.Marshal(root)
-	fmt.Print(string(b))
-}
-
-func lookup1(name string) (string, error) {
-	_, result := ld_cache.Lookup(name)
-	if len(result) == 0 {
-		return "", fmt.Errorf("None: %s", name)
-	}
-	return result[0], nil
-}
-
-func (e *ELF) Resolve() {
+func (e ELF) Resolve() {
 	deps := e.Deps()
 	if len(deps) == 0 {
+		e[e.Key()] = []A{} // ensure not nil after resolve
 		return
 	}
 	for _, dep := range deps {
 		path, err := lookup1(dep)
 		if err != nil {
 			log.Println(err)
-			d := &ELF{
-				Path:     dep,
-				Children: nil,
-			}
-			e.Children = append(e.Children, d)
+			e[e.Key()] = append(e[e.Key()], A(New(dep)))
 			continue
 		}
 
-		d := &ELF{
-			Path:     path,
-			Children: []*ELF{},
-		}
-
+		d := New(path)
 		d.Resolve()
-
-		e.Children = append(e.Children, d)
+		e[e.Key()] = append(e[e.Key()], A(d))
 	}
+}
+
+func main() {
+	root := New(os.Args[1])
+	root.Resolve()
+	b, _ := yaml.Marshal(root)
+	fmt.Print(string(b))
 }
