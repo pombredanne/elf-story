@@ -237,7 +237,7 @@ you can even visualize it with [lddgraph](https://github.com/bbenoist/lddgraph)
 ```
 ./lddgraph /usr/lib/libfreetype.so.6 -e /tmp/wtf.jpg
 ```
-![circular dependency](ink.jpg)
+![circular dependency](ink.png)
 
 So it's not completely my fault that `lddtree.go` never finished on /usr/bin/vim. 
 The existence of mutually dependent libraries (in this case freetype2 and harfbuzz) breaks the tree model in my program
