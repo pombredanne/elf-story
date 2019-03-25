@@ -20,6 +20,11 @@ type A ELF
 
 type ELF map[string][]A
 
+/*
+   this is only recommended way to safely create
+   a new ELF, ensuring the key exists, but not
+   necessarily the value
+*/
 func New(key string) ELF {
 	return ELF{key: nil}
 }
