@@ -2,7 +2,10 @@ package main
 
 import (
 	"debug/elf"
+	"fmt"
 	"log"
+
+	"github.com/ghodss/yaml"
 )
 
 var mem = map[string][]string{}
@@ -65,4 +68,12 @@ func (e ELF) Resolve() {
 		d.Resolve()
 		e[e.Key()] = append(e[e.Key()], A(d))
 	}
+}
+
+func (e ELF) String() string {
+	b, err := yaml.Marshal(e)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return fmt.Sprintf("%s", b)
 }
