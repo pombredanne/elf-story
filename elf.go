@@ -85,7 +85,7 @@ func (e ELF) Deps() []string {
 	}
 	f, err := elf.Open(e.Key())
 	if err != nil {
-		// log.Println(err)
+		log.Println(err)
 		return nil
 	}
 	defer f.Close()
