@@ -11,7 +11,9 @@ func main() {
 		log.Fatalln("usage: ./lddtree [file]")
 	}
 	root := New(os.Args[1])
-	root.Resolve()
+	//root.Resolve()
+	fmt.Println("============================= .ResolvIndent() =============================")
+	root.ResolveIndent("    ")
 
 	fmt.Println("============================= .String() =============================")
 	fmt.Print(root.String())

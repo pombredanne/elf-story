@@ -110,6 +110,27 @@ func (e ELF) Resolve() {
 	}
 }
 
+func (e ELF) ResolveIndent(indent string, lvl ...int) {
+	prefix := strings.Repeat(indent, len(lvl))
+	fmt.Printf("%s%s\n", prefix, e.Key())
+	deps := e.Deps()
+	if len(deps) == 0 {
+		e.Set([]ELF{}) // ensure not nil after resolve
+		return
+	}
+	for _, dep := range deps {
+		path, err := ldcacheLookup(dep)
+		if err != nil {
+			log.Println(err)
+			e.Append(New(dep))
+			continue
+		}
+		d := New(path)
+		d.ResolveIndent(indent, append(lvl, 0)...)
+		e.Append(d)
+	}
+}
+
 func (e ELF) String() string {
 	b, err := yaml.Marshal(e)
 	if err != nil {
