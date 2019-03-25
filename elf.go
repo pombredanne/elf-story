@@ -33,6 +33,10 @@ func (e ELF) Key() string {
 	return key
 }
 
+func (e ELF) Val() []A {
+	return e[e.Key()]
+}
+
 func (e ELF) Deps() []string {
 	if v, ok := mem[e.Key()]; ok {
 		return v
