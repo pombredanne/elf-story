@@ -39,6 +39,12 @@ func (e ELF) Key() string {
 	return key
 }
 
+func (e ELF) ChangeKey(newkey string) {
+	oldval := e.Val()
+	delete(e, e.Key())
+	e[newkey] = ELF2A(oldval)
+}
+
 func ELF2A(es []ELF) []A {
 	var as []A
 	if es != nil {
@@ -79,7 +85,7 @@ func (e ELF) Deps() []string {
 	}
 	f, err := elf.Open(e.Key())
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		return nil
 	}
 	defer f.Close()
@@ -112,20 +118,38 @@ func (e ELF) Resolve() {
 
 func (e ELF) ResolveIndent(indent string, lvl ...int) {
 	prefix := strings.Repeat(indent, len(lvl))
-	fmt.Printf("%s%s\n", prefix, e.Key())
-	deps := e.Deps()
-	if len(deps) == 0 {
-		e.Set([]ELF{}) // ensure not nil after resolve
+	var err error
+	var path string
+
+	if len(lvl) != 0 {
+		path, err = ldcacheLookup(e.Key())
+		if err == nil {
+			e.ChangeKey(path)
+		}
+	}
+
+	if len(lvl) != 0 && err != nil {
+		fmt.Printf("%s%s [!!!NOT FOUND!!!]\n", prefix, e.Key())
+	} else {
+		fmt.Printf("%s%s\n", prefix, e.Key())
+	}
+
+	if len(e.Deps()) == 0 {
+		if err == nil {
+			e.Set([]ELF{}) // ensure not nil after resolve
+		}
 		return
 	}
-	for _, dep := range deps {
-		path, err := ldcacheLookup(dep)
+
+	if len(lvl) != 0 {
 		if err != nil {
-			log.Println(err)
-			e.Append(New(dep))
-			continue
+			// fmt.Println("err")
+			return
 		}
-		d := New(path)
+	}
+
+	for _, dep := range e.Deps() {
+		d := New(dep)
 		d.ResolveIndent(indent, append(lvl, 0)...)
 		e.Append(d)
 	}
