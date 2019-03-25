@@ -8,6 +8,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/rai-project/ldcache"
 )
@@ -22,6 +23,29 @@ func init() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func Lookup(name string) (string, error) {
+	str, err := ldcacheLookup(name)
+	if err == nil {
+		return str, nil
+	}
+	str, err = relpathLookup(name)
+	if err == nil {
+		return str, nil
+	}
+	return name, err
+}
+
+func relpathLookup(name string) (string, error) {
+	_, err := os.Stat(name)
+	if err == nil {
+		return name, nil
+	}
+	if os.IsNotExist(err) {
+		return "", err
+	}
+	return "", err
 }
 
 func ldcacheLookup(name string) (string, error) {
