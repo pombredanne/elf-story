@@ -37,6 +37,14 @@ func (e ELF) Val() []A {
 	return e[e.Key()]
 }
 
+func (e ELF) Append(a A) {
+	e[e.Key()] = append(e.Val(), a)
+}
+
+func (e ELF) Set(a []A) {
+	e[e.Key()] = a
+}
+
 func (e ELF) Deps() []string {
 	if v, ok := mem[e.Key()]; ok {
 		return v
@@ -58,19 +66,19 @@ func (e ELF) Deps() []string {
 func (e ELF) Resolve() {
 	deps := e.Deps()
 	if len(deps) == 0 {
-		e[e.Key()] = []A{} // ensure not nil after resolve
+		e.Set([]A{}) // ensure not nil after resolve
 		return
 	}
 	for _, dep := range deps {
 		path, err := ldcacheLookup(dep)
 		if err != nil {
 			log.Println(err)
-			e[e.Key()] = append(e.Val(), A(New(dep)))
+			e.Append(A(New(dep)))
 			continue
 		}
 		d := New(path)
 		d.Resolve()
-		e[e.Key()] = append(e.Val(), A(d))
+		e.Append(A(d))
 	}
 }
 
