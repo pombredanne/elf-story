@@ -4,6 +4,7 @@ import (
 	"debug/elf"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/ghodss/yaml"
 )
@@ -115,4 +116,18 @@ func (e ELF) String() string {
 		log.Fatalln(err)
 	}
 	return fmt.Sprintf("%s", b)
+}
+
+func (e ELF) StringIndent(indent string, lvl ...int) string {
+	result := ""
+	prefix := strings.Repeat(indent, len(lvl))
+	suffix := ""
+	if e.Val() == nil {
+		suffix = " [NOT FOUND]"
+	}
+	result += fmt.Sprintf("%s%s%s\n", prefix, e.Key(), suffix)
+	for _, v := range e.Val() {
+		result += v.StringIndent(indent, append(lvl, 0)...)
+	}
+	return result
 }
