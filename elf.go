@@ -131,3 +131,15 @@ func (e ELF) StringIndent(indent string, lvl ...int) string {
 	}
 	return result
 }
+
+func (e ELF) PrintIndent(indent string, lvl ...int) {
+	prefix := strings.Repeat(indent, len(lvl))
+	suffix := ""
+	if e.Val() == nil {
+		suffix = " [NOT FOUND]"
+	}
+	fmt.Printf("%s%s%s\n", prefix, e.Key(), suffix)
+	for _, v := range e.Val() {
+		v.PrintIndent(indent, append(lvl, 0)...)
+	}
+}

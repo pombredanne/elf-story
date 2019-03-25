@@ -12,7 +12,13 @@ func main() {
 	}
 	root := New(os.Args[1])
 	root.Resolve()
+
+	fmt.Println("============================= .String() =============================")
 	fmt.Print(root.String())
-	fmt.Println("=============================")
+
+	fmt.Println("============================= .StringIndent() =============================")
 	fmt.Print(root.StringIndent("    "))
+
+	fmt.Println("============================= .PrintIndent() =============================")
+	root.PrintIndent("    ")
 }
