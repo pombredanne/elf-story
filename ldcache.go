@@ -1,3 +1,8 @@
+// TODO:
+// respect $LD_PRELOADED_PATH
+// search $PATH
+// check relative path
+
 package main
 
 import (
