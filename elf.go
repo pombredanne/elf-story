@@ -38,16 +38,38 @@ func (e ELF) Key() string {
 	return key
 }
 
-func (e ELF) Val() []A {
-	return e[e.Key()]
+func ELF2A(es []ELF) []A {
+	var as []A
+	if es != nil {
+		as = []A{}
+	}
+	for _, e := range es {
+		as = append(as, A(e))
+	}
+	return as
 }
 
-func (e ELF) Append(a A) {
-	e[e.Key()] = append(e.Val(), a)
+func A2ELF(as []A) []ELF {
+	var es []ELF
+	if as != nil {
+		es = []ELF{}
+	}
+	for _, a := range as {
+		es = append(es, ELF(a))
+	}
+	return es
 }
 
-func (e ELF) Set(a []A) {
-	e[e.Key()] = a
+func (e ELF) Val() []ELF {
+	return A2ELF(e[e.Key()])
+}
+
+func (e ELF) Append(a ELF) {
+	e[e.Key()] = append(ELF2A(e.Val()), A(a))
+}
+
+func (e ELF) Set(a []ELF) {
+	e[e.Key()] = ELF2A(a)
 }
 
 func (e ELF) Deps() []string {
@@ -71,19 +93,19 @@ func (e ELF) Deps() []string {
 func (e ELF) Resolve() {
 	deps := e.Deps()
 	if len(deps) == 0 {
-		e.Set([]A{}) // ensure not nil after resolve
+		e.Set([]ELF{}) // ensure not nil after resolve
 		return
 	}
 	for _, dep := range deps {
 		path, err := ldcacheLookup(dep)
 		if err != nil {
 			log.Println(err)
-			e.Append(A(New(dep)))
+			e.Append(New(dep))
 			continue
 		}
 		d := New(path)
 		d.Resolve()
-		e.Append(A(d))
+		e.Append(d)
 	}
 }
 
