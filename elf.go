@@ -65,12 +65,12 @@ func (e ELF) Resolve() {
 		path, err := ldcacheLookup(dep)
 		if err != nil {
 			log.Println(err)
-			e[e.Key()] = append(e[e.Key()], A(New(dep)))
+			e[e.Key()] = append(e.Val(), A(New(dep)))
 			continue
 		}
 		d := New(path)
 		d.Resolve()
-		e[e.Key()] = append(e[e.Key()], A(d))
+		e[e.Key()] = append(e.Val(), A(d))
 	}
 }
 

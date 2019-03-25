@@ -12,5 +12,5 @@ func main() {
 	}
 	root := New(os.Args[1])
 	root.Resolve()
-	fmt.Println(root.String())
+	fmt.Print(root.String())
 }
