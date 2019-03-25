@@ -104,7 +104,7 @@ func (e ELF) Resolve() {
 		return
 	}
 	for _, dep := range deps {
-		path, err := ldcacheLookup(dep)
+		path, err := Lookup(dep)
 		if err != nil {
 			log.Println(err)
 			e.Append(New(dep))
@@ -121,29 +121,15 @@ func (e ELF) ResolveIndent(indent string, lvl ...int) {
 	var err error
 	var path string
 
-	if len(lvl) != 0 {
-		path, err = ldcacheLookup(e.Key())
-		if err == nil {
-			e.ChangeKey(path)
-		}
-	}
-
-	if len(lvl) != 0 && err != nil {
+	path, err = Lookup(e.Key())
+	if err != nil {
 		fmt.Printf("%s%s [!!!NOT FOUND!!!]\n", prefix, e.Key())
-	} else {
-		fmt.Printf("%s%s\n", prefix, e.Key())
-	}
-
-	if len(e.Deps()) == 0 {
-		if err == nil {
-			e.Set([]ELF{}) // ensure not nil after resolve
-		}
 		return
-	}
-
-	if len(lvl) != 0 {
-		if err != nil {
-			// fmt.Println("err")
+	} else {
+		e.ChangeKey(path)
+		fmt.Printf("%s%s\n", prefix, e.Key())
+		if len(e.Deps()) == 0 {
+			e.Set([]ELF{})
 			return
 		}
 	}
