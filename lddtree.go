@@ -28,4 +28,7 @@ func main() {
 
 	fmt.Println("============================= .PrintIndent() =============================")
 	root.PrintIndent("    ")
+
+	fmt.Println("============================= .HTML() =============================")
+	fmt.Println(root.HTML())
 }

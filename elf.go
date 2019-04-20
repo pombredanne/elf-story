@@ -149,6 +149,26 @@ func (e ELF) String() string {
 	return fmt.Sprintf("%s", b)
 }
 
+func (e ELF) HTML() string {
+	result := fmt.Sprintf(`<p> %s </p>`, e.Key())
+	if len(e.Val()) != 0 {
+		template := fmt.Sprintf(`<details open>
+<summary>
+%s
+</summary>
+<div style="padding-left:1rem;">
+%%s
+</div>
+</details>`, result)
+		children := ""
+		for _, c := range e.Val() {
+			children += c.HTML()
+		}
+		result = fmt.Sprintf(template, children)
+	}
+	return result
+}
+
 func (e ELF) StringIndent(indent string, lvl ...int) string {
 	result := ""
 	prefix := strings.Repeat(indent, len(lvl))
